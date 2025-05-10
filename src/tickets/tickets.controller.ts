@@ -1,4 +1,11 @@
-import { Body, ConflictException, Controller, Get, Post } from '@nestjs/common';
+import {
+  Body,
+  ConflictException,
+  Controller,
+  Get,
+  Inject,
+  Post,
+} from '@nestjs/common';
 import { Company } from '../../db/models/Company';
 import {
   Ticket,
@@ -7,6 +14,7 @@ import {
   TicketType,
 } from '../../db/models/Ticket';
 import { User, UserRole } from '../../db/models/User';
+import { Sequelize } from 'sequelize-typescript';
 
 interface newTicketDto {
   type: TicketType;
@@ -24,6 +32,8 @@ interface TicketDto {
 
 @Controller('api/v1/tickets')
 export class TicketsController {
+  constructor(@Inject('SEQUELIZE') private readonly sequelize: Sequelize) {}
+
   @Get()
   async findAll() {
     return await Ticket.findAll({ include: [Company, User] });
@@ -100,34 +110,41 @@ export class TicketsController {
 
     const assignee = assignees[0];
 
-    // For strikeOff tickets, resolve all other active tickets for this company
-    if (type === TicketType.strikeOff) {
-      await Ticket.update(
-        { status: TicketStatus.resolved },
-        {
-          where: {
-            companyId,
-            status: TicketStatus.open,
+    const result = await this.sequelize.transaction(async (t) => {
+      // For strikeOff tickets, resolve all other active tickets for this company
+      if (type === TicketType.strikeOff) {
+        await Ticket.update(
+          { status: TicketStatus.resolved },
+          {
+            where: {
+              companyId,
+              status: TicketStatus.open,
+            },
+            transaction: t,
           },
+        );
+      }
+      const ticket = await Ticket.create(
+        {
+          companyId,
+          assigneeId: assignee.id,
+          category,
+          type,
+          status: TicketStatus.open,
         },
+        { transaction: t },
       );
-    }
 
-    const ticket = await Ticket.create({
-      companyId,
-      assigneeId: assignee.id,
-      category,
-      type,
-      status: TicketStatus.open,
+      return ticket;
     });
 
     const ticketDto: TicketDto = {
-      id: ticket.id,
-      type: ticket.type,
-      assigneeId: ticket.assigneeId,
-      status: ticket.status,
-      category: ticket.category,
-      companyId: ticket.companyId,
+      id: result.id,
+      type: result.type,
+      assigneeId: result.assigneeId,
+      status: result.status,
+      category: result.category,
+      companyId: result.companyId,
     };
 
     return ticketDto;
