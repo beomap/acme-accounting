@@ -15,11 +15,7 @@ import {
 } from '../../db/models/Ticket';
 import { User, UserRole } from '../../db/models/User';
 import { Sequelize } from 'sequelize-typescript';
-
-interface newTicketDto {
-  type: TicketType;
-  companyId: number;
-}
+import { NewTicketInput } from './ticket.schema';
 
 interface TicketDto {
   id: number;
@@ -40,7 +36,7 @@ export class TicketsController {
   }
 
   @Post()
-  async create(@Body() newTicketDto: newTicketDto) {
+  async create(@Body() newTicketDto: NewTicketInput) {
     const { type, companyId } = newTicketDto;
 
     // Check for duplicate registrationAddressChange tickets
