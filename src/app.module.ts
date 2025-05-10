@@ -4,9 +4,10 @@ import { TicketsModule } from './tickets/tickets.module';
 import { ReportsController } from './reports/reports.controller';
 import { HealthcheckController } from './healthcheck/healthcheck.controller';
 import { ReportsService } from './reports/reports.service';
+import { AppConfigModule } from './config/config.module';
 
 @Module({
-  imports: [DbModule, TicketsModule],
+  imports: [AppConfigModule, DbModule, TicketsModule],
   controllers: [ReportsController, HealthcheckController],
   providers: [ReportsService],
 })
