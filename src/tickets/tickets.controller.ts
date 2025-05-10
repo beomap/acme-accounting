@@ -50,15 +50,24 @@ export class TicketsController {
       }
     }
 
-    const category =
-      type === TicketType.managementReport
-        ? TicketCategory.accounting
-        : TicketCategory.corporate;
+    let category: TicketCategory | undefined;
+    let userRole: UserRole | undefined;
 
-    let userRole =
-      type === TicketType.managementReport
-        ? UserRole.accountant
-        : UserRole.corporateSecretary;
+    // Determine category and user role based on ticket type
+    if (type === TicketType.managementReport) {
+      category = TicketCategory.accounting;
+      userRole = UserRole.accountant;
+    } else if (type === TicketType.registrationAddressChange) {
+      category = TicketCategory.corporate;
+      userRole = UserRole.corporateSecretary;
+    } else if (type === TicketType.strikeOff) {
+      category = TicketCategory.management;
+      userRole = UserRole.director;
+    }
+
+    if (!category || !userRole) {
+      throw new ConflictException('Invalid ticket type');
+    }
 
     let assignees = await User.findAll({
       where: { companyId, role: userRole },
@@ -90,6 +99,19 @@ export class TicketsController {
     }
 
     const assignee = assignees[0];
+
+    // For strikeOff tickets, resolve all other active tickets for this company
+    if (type === TicketType.strikeOff) {
+      await Ticket.update(
+        { status: TicketStatus.resolved },
+        {
+          where: {
+            companyId,
+            status: TicketStatus.open,
+          },
+        },
+      );
+    }
 
     const ticket = await Ticket.create({
       companyId,
