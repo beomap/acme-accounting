@@ -5,6 +5,12 @@ import { Company } from '../../db/models/Company';
 import { Ticket } from '../../db/models/Ticket';
 import { User } from '../../db/models/User';
 import { DbModule } from '../db.module';
+import { AppConfigModule } from '../config/config.module';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+const envTestPath = path.resolve(__dirname, '.env.test');
+dotenv.config({ path: envTestPath });
 
 beforeEach(async () => {
   jest.restoreAllMocks();
@@ -13,7 +19,7 @@ beforeEach(async () => {
 
 export async function cleanTables() {
   await Test.createTestingModule({
-    imports: [DbModule],
+    imports: [AppConfigModule, DbModule],
   }).compile();
 
   const models: ModelCtor<Model>[] = [Ticket, User, Company];
