@@ -15,11 +15,13 @@ export class ReportsController {
   }
 
   @Post()
-  @HttpCode(201)
+  @HttpCode(202)
   generate() {
-    this.reportsService.accounts();
-    this.reportsService.yearly();
-    this.reportsService.fs();
-    return { message: 'finished' };
+    void this.reportsService.generateReportsAsync();
+    return {
+      message: 'Report generation started',
+      status: 'processing',
+      statusEndpoint: '/api/v1/reports',
+    };
   }
 }
